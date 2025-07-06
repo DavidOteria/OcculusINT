@@ -3,7 +3,7 @@
 import sys
 import os
 import time
-from occulusint.recon.domain_discovery import discover_from_crtsh
+from occulusint.recon.domain_discovery import discover_domains_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
 from occulusint.recon.resolve import resolve_domains
 from occulusint.enrich.ip_enrichment import (
@@ -44,7 +44,7 @@ Steps:
 """)
 
 def run_discover(keyword):
-    domains = discover_from_crtsh(keyword)
+    domains = discover_domains_from_crtsh(keyword)
     os.makedirs("targets", exist_ok=True)
     out_path = f"targets/{keyword}_domains.txt"
     with open(out_path, "w") as f:

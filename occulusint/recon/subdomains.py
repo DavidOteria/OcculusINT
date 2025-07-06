@@ -9,7 +9,7 @@ class SubdomainsEnumerator:
     def __init__(self) -> None:
         self.engines = [
             CrtShEngine(), 
-            BruteEngine(wordlist_path="sub3enum/wordlists/common.txt")
+            BruteEngine()
         ]
 
     def enumerate(self, domain: str) -> List[str]: 
@@ -23,7 +23,7 @@ class SubdomainsEnumerator:
 
         for engine in self.engines: 
             try:
-                result =  engine.run(domain)
+                result =  engine.enumerate(domain)
                 all_subdomains.update(result)
             except Exception as e: 
                 print(f"[!] Engine {engine.__class__.__name__} failed: {e}")

@@ -1,8 +1,10 @@
 certifi==2025.6.15
 charset-normalizer==3.4.2
+defusedxml==0.7.1
 dnspython==2.7.0
 filelock==3.18.0
 idna==3.10
+ipwhois==1.3.0
 requests==2.32.4
 requests-file==2.1.0
 sub3num @ git+https://github.com/DavidOteria/sub3num.git@b10f6857b2bce2ff394bf2a8841352a08641956c

@@ -21,7 +21,7 @@ def main():
     for sub in results:
         print(f" - {sub}")
 
-    output_path = f"targets/{domain}_subdomains.txt"
+    output_path = f"targets/{domain}_domains.txt"
     with open(output_path, "w") as f:
         for sub in results:
             f.write(sub + "\n")

@@ -1,5 +1,3 @@
-# occulusint/recon/resolve.py
-
 import socket
 from typing import List, Dict
 

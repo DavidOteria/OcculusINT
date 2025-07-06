@@ -2,12 +2,6 @@ import requests
 import re
 from typing import List, Set
 
-# occulusint/recon/domain_discovery.py
-
-import requests
-import re
-from typing import List, Set
-
 
 def discover_domains_from_crtsh(keyword: str) -> List[str]:
     """

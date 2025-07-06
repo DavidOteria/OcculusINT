@@ -3,8 +3,7 @@
 import sys
 import os
 import time
-from occulusint.recon.cert_discovery import discover_from_crtsh
-from occulusint.recon.google_dork import search_subdomains
+from occulusint.recon.domain_discovery import discover_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
 from occulusint.recon.resolve import resolve_domains
 from occulusint.enrich.ip_enrichment import (
@@ -64,13 +63,6 @@ def run_enum(input_path):
     with open(out, "w") as f:
         f.write("\n".join(sorted(all_subs)))
     print(f"[+] Subdomains saved to {out}")
-
-def run_googledork(domain):
-    subs = search_subdomains(domain, num=50)
-    out = f"targets/{domain.replace('.', '_')}_googledork.txt"
-    with open(out, "w") as f:
-        f.write("\n".join(subs))
-    print(f"[+] Dork results saved to {out}")
 
 def run_resolve(input_path):
     with open(input_path) as f:

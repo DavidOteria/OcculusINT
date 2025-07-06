@@ -28,8 +28,7 @@ occulusint/
 │   └── domain_filter.py      ← Scoring + filtering logic
 ├── recon/
 │   ├── __init__.py
-│   ├── cert_discovery.py     ← crt.sh extraction
-│   ├── google_dork.py        ← Google scraping
+│   ├── domains_discovery.py     ← crt.sh extraction
 │   ├── subdomains.py         ← Sub3num wrapper
 │   └── resolve.py            ← DNS resolution
 └── enrich/

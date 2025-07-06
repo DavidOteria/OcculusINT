@@ -9,6 +9,7 @@ OcculusINT is a lightweight OSINT tool designed to identify an organization's in
 ## Structure
 
 ### Root 
+```cpp
 OcculusINT/
 ├── main.py                   ← Central CLI entry point
 ├── README.md                 ← Project documentation
@@ -16,8 +17,10 @@ OcculusINT/
 ├── LICENSE                   ← MIT License
 ├── targets/                  ← Generated output files (.txt, .csv)
 └── occulusint/               ← Python modules (importable)
+```
 
 ### Core Modules 
+```cpp
 occulusint/
 ├── __init__.py
 ├── core/
@@ -32,7 +35,7 @@ occulusint/
 └── enrich/
     ├── __init__.py
     └── ip_enrichment.py      ← ASN, GEO, Cloud, etc.
-
+```
 ---
 
 ## What is OcculusINT?
@@ -138,10 +141,12 @@ OcculusINT performs no intrusive scanning by default. All data is collected from
 
 ll core functionalities are separated into modules:
 
+```cpp
 occulusint/
 ├── recon/
 ├── core/
 └── enrich/
+```
 
 You can reuse or plug in new engines easily.
 

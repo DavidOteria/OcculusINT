@@ -103,9 +103,9 @@ python main.py filter targets/example_subdomains.txt example1 example2 example3
 
 Each domain is assigned a score from 0 to 100 based on:
 
-- Match with keywords (bnp, paribas, etc.)
+- Match with keywords (test, google, etc.)
 - Trusted TLD (.fr, .com, .net)
-- Brand variants (e.g. bnpparibas, bnp-cardif)
+- Brand variants (e.g. domainexemple, domain-exemple, exemple-cardif)
 - Subdomain depth and pattern
 - HTTP 200 availability
 - WHOIS organization match

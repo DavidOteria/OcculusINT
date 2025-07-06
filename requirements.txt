@@ -1,0 +1,7 @@
+certifi==2025.6.15
+charset-normalizer==3.4.2
+dnspython==2.7.0
+idna==3.10
+requests==2.32.4
+sub3num @ git+https://github.com/DavidOteria/sub3num.git@b10f6857b2bce2ff394bf2a8841352a08641956c
+urllib3==2.5.0

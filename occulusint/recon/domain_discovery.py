@@ -2,12 +2,11 @@ import requests
 import re
 from typing import List, Set
 
-
 def discover_domains_from_crtsh(keyword: str) -> List[str]:
     """
     Use crt.sh to discover domain names containing the keyword.
     
-    :param keyword: Search keyword (e.g. 'bnp')
+    :param keyword: Search keyword (e.g. 'company1')
     :return: List of unique domain names
     """
     url = f"https://crt.sh/?q=%25{keyword}%25&output=json"

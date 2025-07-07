@@ -1,8 +1,9 @@
-# main.py
-
 import sys
 import os
-import time
+import csv
+from utils.csv import read_csv, write_csv
+from utils.threading import run_parallel
+from utils.display import export_grouped_domains_txt
 from occulusint.recon.domain_discovery import discover_domains_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
 from occulusint.recon.resolve import resolve_domains
@@ -18,16 +19,18 @@ from occulusint.core.domain_filter import (
 
 def show_banner():
     print(r"""
-          
- ██████   ██████  ██████ ██    ██ ██      ██    ██ ███████ ██ ███    ██ ████████ 
-██    ██ ██      ██      ██    ██ ██      ██    ██ ██      ██ ████   ██    ██    
-██    ██ ██      ██      ██    ██ ██      ██    ██ ███████ ██ ██ ██  ██    ██    
-██    ██ ██      ██      ██    ██ ██      ██    ██      ██ ██ ██  ██ ██    ██    
- ██████   ██████  ██████  ██████  ███████  ██████  ███████ ██ ██   ████    ██    
-                                                                                 
+
+     ██████╗  ██████╗ ██████╗██╗   ██╗██╗     ██╗   ██╗███████╗██╗███╗   ██╗████████╗
+    ██╔═══██╗██╔════╝██╔════╝██║   ██║██║     ██║   ██║██╔════╝██║████╗  ██║╚══██╔══╝
+    ██║   ██║██║     ██║     ██║   ██║██║     ██║   ██║███████╗██║██╔██╗ ██║   ██║   
+    ██║   ██║██║     ██║     ██║   ██║██║     ██║   ██║╚════██║██║██║╚██╗██║   ██║   
+    ╚██████╔╝╚██████╗╚██████╗╚██████╔╝███████╗╚██████╔╝███████║██║██║ ╚████║   ██║   
+     ╚═════╝  ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝╚═╝╚═╝  ╚═══╝   ╚═╝   
+
         Open-Source Recon Tool - Your Eye on the External Surface
 
-                        https://github.com/DavidOteria/OcculusINT
+            https://github.com/DavidOteria/OcculusINT
+          
     """)
 
 def usage():
@@ -36,55 +39,50 @@ Usage: python main.py <step> <args>
 
 Steps:
   discover   <keyword>
-  enum       <input_file.txt>
-  googledork <domain>
-  resolve    <input_file.txt>
+  enum       <input_file.csv>
+  resolve    <input_file.csv>
   enrich     <resolved.csv>
-  filter     <input_file.txt> <kw1> [kw2] ...
+  filter     <input_file.csv> <keyword1> <keyword2> ...
 """)
 
 def run_discover(keyword):
     domains = discover_domains_from_crtsh(keyword)
     os.makedirs("targets", exist_ok=True)
-    out_path = f"targets/{keyword}_domains.txt"
-    with open(out_path, "w") as f:
-        f.write("\n".join(domains))
+    out_path = f"targets/{keyword}_domains.csv"
+    data = [{"fqdn": domain} for domain in domains]
+    write_csv(out_path, data, fieldnames=["fqdn"])
     print(f"[+] Domains saved to {out_path}")
 
 def run_enum(input_path):
-    with open(input_path) as f:
-        roots = [line.strip() for line in f if line.strip()]
+    roots = [row["fqdn"] for row in read_csv(input_path)]
     enumerator = SubdomainsEnumerator()
     all_subs = set()
+
     for root in roots:
-        subs = enumerator.enumerate(root)
-        all_subs.update(subs)
-    out = input_path.replace(".txt", "_subdomains.txt")
-    with open(out, "w") as f:
-        f.write("\n".join(sorted(all_subs)))
-    print(f"[+] Subdomains saved to {out}")
+        print(f"[~] Enumerating subdomains for: {root}")
+        try:
+            subs = enumerator.enumerate(root)
+            print(f"[+] {len(subs)} subdomains found for {root}")
+            all_subs.update(subs)
+        except Exception as e:
+            print(f"[!] Error while enumerating {root}: {e}")
+
+    out_path = input_path.replace(".csv", "_subdomains.csv")
+    data = [{"fqdn": sub} for sub in sorted(all_subs)]
+    write_csv(out_path, data, fieldnames=["fqdn"])
+    print(f"[✔] Subdomains saved to {out_path}")
 
 def run_resolve(input_path):
-    with open(input_path) as f:
-        domains = [line.strip() for line in f if line.strip()]
+    domains = [row["fqdn"] for row in read_csv(input_path)]
     results = resolve_domains(domains)
-    out = input_path.replace(".txt", "_resolved.csv")
-    with open(out, "w") as f:
-        f.write("domain,ip\n")
-        for d, ip in results.items():
-            f.write(f"{d},{ip}\n")
+    out = input_path.replace(".csv", "_resolved.csv")
+    data = [{"domain": d, "ip": ip} for d, ip in results.items()]
+    write_csv(out, data, fieldnames=["domain", "ip"])
     print(f"[+] Resolved IPs saved to {out}")
 
 def run_enrich(input_csv):
-    import csv
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-
-    output_csv = input_csv.replace("_resolved.csv", "_enriched.csv")
-    os.makedirs("targets", exist_ok=True)
-
-    with open(input_csv, newline='', encoding='utf-8') as inp:
-        reader = csv.DictReader(inp)
-        records = list(reader)
+    records = read_csv(input_csv)
+    out = input_csv.replace(".csv", "_enriched.csv")
 
     def enrich_record(row):
         domain = row["domain"]
@@ -103,53 +101,32 @@ def run_enrich(input_csv):
             "provider": provider
         }
 
-    results = []
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        futures = {executor.submit(enrich_record, row): row for row in records}
-        for future in as_completed(futures):
-            try:
-                enriched = future.result()
-                results.append(enriched)
-                print(f"[+] {enriched['domain']} → {enriched['provider']} ({enriched['country']})")
-            except Exception as e:
-                print(f"[!] Error during enrichment: {e}")
-
-    with open(output_csv, "w", newline='', encoding='utf-8') as out:
-        fieldnames = [
-            "domain", "ip", "asn", "network_name",
-            "country", "region", "city", "provider"
-        ]
-        writer = csv.DictWriter(out, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(results)
-
-    print(f"\n[+] Enriched data saved to {output_csv}")
+    results, _ = run_parallel(enrich_record, records, max_workers=20)
+    write_csv(out, results, fieldnames=[
+        "domain", "ip", "asn", "network_name",
+        "country", "region", "city", "provider"
+    ])
+    print(f"[+] Enriched data saved to {out}")
 
 def run_filter(input_path, keywords):
-    with open(input_path) as f:
-        domains = [line.strip() for line in f if line.strip()]
+    from utils.display import export_grouped_domains_txt
+
+    domains = [row["fqdn"] for row in read_csv(input_path)]
     scored = score_domains_parallel(domains, keywords, show_progress=True)
-    filtered = [(d, s) for d, s in scored if s >= 50]
-    out = input_path.replace(".txt", "_filtered.txt")
-    with open(out, "w") as f:
-        from collections import defaultdict
-        score_map = defaultdict(list)
-        for d, s in filtered:
-            score_map[s].append(d)
-        for score in sorted(score_map, reverse=True):
-            f.write(f"score {score}:\n")
-            roots = [d for d in score_map[score] if not is_subdomain(d)]
-            subs = [d for d in score_map[score] if is_subdomain(d)]
-            if roots:
-                f.write("  == Root domains ==\n")
-                for d in roots:
-                    f.write(f"    - {d}\n")
-            if subs:
-                f.write("  == Subdomains ==\n")
-                for d in subs:
-                    f.write(f"    - {d}\n")
-            f.write("\n")
-    print(f"[+] Filtered domains saved to {out}")
+
+    out_csv = input_path.replace(".csv", "_filtered.csv")
+    out_txt = input_path.replace(".csv", "_filtered.txt")
+
+    data = []
+    for fqdn, score in scored:
+        type_ = "subdomain" if is_subdomain(fqdn) else "root"
+        data.append({"fqdn": fqdn, "score": score, "type": type_})
+
+    write_csv(out_csv, data, fieldnames=["fqdn", "score", "type"])
+    export_grouped_domains_txt(data, out_txt)
+
+    print(f"[+] Filtered and scored domains saved to:\n  - {out_csv}\n  - {out_txt}")
+
 
 def main():
     show_banner()
@@ -164,8 +141,6 @@ def main():
         run_discover(sys.argv[2])
     elif cmd == "enum" and len(sys.argv) == 3:
         run_enum(sys.argv[2])
-    elif cmd == "googledork" and len(sys.argv) == 3:
-        run_googledork(sys.argv[2])
     elif cmd == "resolve" and len(sys.argv) == 3:
         run_resolve(sys.argv[2])
     elif cmd == "enrich" and len(sys.argv) == 3:

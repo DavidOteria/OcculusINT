@@ -45,15 +45,15 @@ OcculusINT is a modular and extensible OSINT toolkit designed to map and score a
 
 ## Features
 
-- ✅ Domain discovery via certificate logs (crt.sh)
-- ✅ Subdomain enumeration (via Sub3num)
-- ✅ Google Dork-based surface scraping
-- ✅ DNS resolution & IP mapping
-- ✅ ASN & geolocation enrichment (RDAP + ip-api)
-- ✅ Cloud provider detection (AWS, Azure, GCP, OVH…)
-- ✅ Heuristic scoring system for triage
-- ✅ Exportable results (CSV, TXT)
-- ✅ One-file CLI orchestration: `main.py`
+- Domain discovery via certificate logs (crt.sh)
+- Subdomain enumeration (via Sub3num)
+- Google Dork-based surface scraping
+- DNS resolution & IP mapping
+- ASN & geolocation enrichment (RDAP + ip-api)
+- Cloud provider detection (AWS, Azure, GCP, OVH…)
+- Heuristic scoring system for triage
+- Exportable results (CSV, TXT)
+- One-file CLI orchestration: `main.py`
 
 ---
 

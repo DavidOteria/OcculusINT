@@ -1,12 +1,16 @@
 import sys
 import os
 import csv
+import pathlib
 from utils.csv import read_csv, write_csv
 from utils.threading import run_parallel
 from utils.display import export_grouped_domains_txt
+from utils.nvd_cache import load_cache
+from utils.files import build_outfile
 from occulusint.recon.domain_discovery import discover_domains_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
 from occulusint.recon.resolve import resolve_domains
+from occulusint.vuln.passive_vuln import passive_vuln_scan
 from occulusint.enrich.ip_enrichment import (
     get_asn_info,
     get_geolocation,
@@ -38,11 +42,12 @@ def usage():
 Usage: python main.py <step> <args>
 
 Steps:
-  discover   <keyword>
-  enum       <input_file.csv>
-  resolve    <input_file.csv>
-  enrich     <resolved.csv>
-  filter     <input_file.csv> <keyword1> <keyword2> ...
+  discover      <keyword>
+  enum          <input_file.csv>
+  resolve       <input_file.csv>
+  passive-vuln  <input_file_resolved.csv> <SHODAN_API_KEY>
+  enrich        <resolved.csv>
+  filter        <input_file.csv> <keyword1> <keyword2> ...
 """)
 
 def run_discover(keyword):
@@ -79,6 +84,14 @@ def run_resolve(input_path):
     data = [{"domain": d, "ip": ip} for d, ip in results.items()]
     write_csv(out, data, fieldnames=["domain", "ip"])
     print(f"[+] Resolved IPs saved to {out}")
+
+def run_passive_vuln(input_csv: str, api_key: str):
+    out_vuln  = build_outfile(input_csv, "vuln")
+    out_score = build_outfile(input_csv, "vuln_score")      # simple réutilisation
+
+    passive_vuln_scan(input_csv, out_vuln, api_key)         # génère out_vuln et out_score
+    print(f"[+] Vuln file : {out_vuln}")
+    print(f"[+] Score file: {out_score}")
 
 def run_enrich(input_csv):
     records = read_csv(input_csv)
@@ -127,6 +140,11 @@ def run_filter(input_path, keywords):
 
     print(f"[+] Filtered and scored domains saved to:\n  - {out_csv}\n  - {out_txt}")
 
+def run_update_nvd():
+    """Download / refresh the NVD feed (CVSS cache)."""
+    load_cache(force=True)
+    print("[+] NVD CVSS cache successfully updated.")
+
 
 def main():
     show_banner()
@@ -143,10 +161,14 @@ def main():
         run_enum(sys.argv[2])
     elif cmd == "resolve" and len(sys.argv) == 3:
         run_resolve(sys.argv[2])
+    elif cmd == "passive-vuln" and len(sys.argv) == 4:
+        run_passive_vuln(sys.argv[2], sys.argv[3]) 
     elif cmd == "enrich" and len(sys.argv) == 3:
         run_enrich(sys.argv[2])
     elif cmd == "filter" and len(sys.argv) >= 4:
         run_filter(sys.argv[2], sys.argv[3:])
+    elif cmd == "update-nvd" and len(sys.argv) == 3:
+        run_update_nvd(sys.argv[2])
     else:
         usage()
 

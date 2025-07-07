@@ -51,6 +51,7 @@ OcculusINT is a modular and extensible OSINT toolkit designed to map and score a
 - DNS resolution & IP mapping
 - ASN & geolocation enrichment (RDAP + ip-api)
 - Cloud provider detection (AWS, Azure, GCP, OVH…)
+- Passive vulnerability scan via Shodan (CVSS-aware scoring)
 - Heuristic scoring system for triage
 - Exportable results (CSV, TXT)
 - One-file CLI orchestration: `main.py`
@@ -84,6 +85,8 @@ Available commands:
 - googledork → Extract subdomains via Google results
 - resolve → Resolve all domains to IP addresses
 - enrich → Enrich IPs with ASN, geolocation, provider
+- passive-vuln → Passive vuln scan + score
+- update-nvd → Refresh local CVSS feed
 - filter → Score and filter most relevant domains
 
 ## Examples 
@@ -94,6 +97,8 @@ python main.py enum targets/example_domains.txt
 python main.py googledork example.com
 python main.py resolve targets/example_subdomains.txt
 python main.py enrich targets/example_subdomains_resolved.csv
+python main.py passive-vuln targets/example_subdomains_resolved.csv YOUR_SHODAN_KEY
+python main.py update-nvd
 python main.py filter targets/example_subdomains.txt example1 example2 example3
 ```
 
@@ -118,6 +123,35 @@ Low-quality TLDs, dev/test keywords, and long or unresolved domains are penalize
 
 ---
 
+### Scoring grid — how the **0-100** rating is calculated
+
+- **TLS (max 25)**
+  - TLS 1.3 → **25 pts**
+  - TLS 1.2 → **15 pts**
+  - ≤ TLS 1.1 → **0 pts**
+  - – 10 pts if cipher contains *RC4*, *3DES* or *DES*
+
+- **Vulnerabilities (max 35)**  
+  *(worst CVSS among all CVE for the host)*
+  - No CVE             → **35 pts**
+  - Low   (0.0 – 3.9)  → **25 pts**
+  - Medium (4.0 – 6.9) → **15 pts**
+  - High  (7.0 – 8.9)  → **5 pts**
+  - Critical (9 – 10)  → **0 pts**
+
+- **Exposure (max 25)**
+  - Start at **25 pts**
+  - – 10 pts if **21 / 23 / 445 / 3389** are open
+  - – 5 pts if any other privileged port (< 1024) is open  
+    *(80 & 443 excluded)*
+  - Floor = 0 pts
+
+- **Hygiene (max 15)**
+  - Custom HTTP title (not *default / test / welcome*) → **15 pts**
+  - Otherwise → **5 pts**
+
+Total = TLS + Vuln + Exposure + Hygiene **(0 → 100)**.
+
 ## Output Files
 
 All outputs are saved to the /targets/ directory:
@@ -127,6 +161,8 @@ All outputs are saved to the /targets/ directory:
 - ..._resolved.csv
 - ..._enriched.csv
 - ..._filtered.txt
+- ..._vuln.csv
+- ..._vuln_score.csv
 
 --- 
 
@@ -144,7 +180,8 @@ ll core functionalities are separated into modules:
 occulusint/
 ├── recon/
 ├── core/
-└── enrich/
+├── enrich/
+└── vuln/
 ```
 
 You can reuse or plug in new engines easily.

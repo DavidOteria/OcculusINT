@@ -4,9 +4,11 @@ import csv
 from utils.csv import read_csv, write_csv
 from utils.threading import run_parallel
 from utils.display import export_grouped_domains_txt
+from utils.enrich import enrich_record
 from occulusint.recon.domain_discovery import discover_domains_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
 from occulusint.recon.resolve import resolve_domains
+from utils.display import export_root_vs_sub_txt
 from occulusint.enrich.ip_enrichment import (
     get_asn_info,
     get_geolocation,
@@ -14,8 +16,10 @@ from occulusint.enrich.ip_enrichment import (
 )
 from occulusint.core.domain_filter import (
     score_domains_parallel,
-    is_subdomain
+    is_subdomain,
+    score_to_label
 )
+
 
 def show_banner():
     print(r"""
@@ -45,10 +49,11 @@ Steps:
   filter     <input_file.csv> <keyword1> <keyword2> ...
 """)
 
-def run_discover(keyword):
-    domains = discover_domains_from_crtsh(keyword)
+def run_discover(keywords):
+    domains = discover_domains_from_crtsh(keywords)
     os.makedirs("targets", exist_ok=True)
-    out_path = f"targets/{keyword}_domains.csv"
+    joined = "_".join(keywords)
+    out_path = f"targets/{joined}_domains.csv"
     data = [{"fqdn": domain} for domain in domains]
     write_csv(out_path, data, fieldnames=["fqdn"])
     print(f"[+] Domains saved to {out_path}")
@@ -73,7 +78,18 @@ def run_enum(input_path):
     print(f"[✔] Subdomains saved to {out_path}")
 
 def run_resolve(input_path):
-    domains = [row["fqdn"] for row in read_csv(input_path)]
+    rows = read_csv(input_path)
+
+    domains = [
+        (row.get("fqdn") or row.get("domain")).strip()
+        for row in rows
+        if row.get("fqdn") or row.get("domain")
+    ]
+
+    if not domains:
+        print("[!] No valid domain found in the file.")
+        return
+
     results = resolve_domains(domains)
     out = input_path.replace(".csv", "_resolved.csv")
     data = [{"domain": d, "ip": ip} for d, ip in results.items()]
@@ -81,37 +97,35 @@ def run_resolve(input_path):
     print(f"[+] Resolved IPs saved to {out}")
 
 def run_enrich(input_csv):
-    records = read_csv(input_csv)
-    out = input_csv.replace(".csv", "_enriched.csv")
+    records_raw = read_csv(input_csv)
 
-    def enrich_record(row):
-        domain = row["domain"]
-        ip = row["ip"]
-        asn, netname = get_asn_info(ip)
-        geo = get_geolocation(ip)
-        provider = detect_cloud_provider(asn, netname)
-        return {
-            "domain": domain,
-            "ip": ip,
-            "asn": asn,
-            "network_name": netname,
-            "country": geo.get("country", ""),
-            "region": geo.get("region", ""),
-            "city": geo.get("city", ""),
-            "provider": provider
-        }
+    # Normalise l’entrée
+    records = []
+    for row in records_raw:
+        ip = row.get("ip", "").strip()
+        fqdn = row.get("fqdn") or row.get("domain")
+        if fqdn and ip:
+            records.append({"domain": fqdn.strip(), "ip": ip})
 
-    results, _ = run_parallel(enrich_record, records, max_workers=20)
-    write_csv(out, results, fieldnames=[
+    if not records:
+        print("[!] Aucun couple domaine/IP valide trouvé dans le fichier.")
+        return
+
+    out_csv = input_csv.replace(".csv", "_enriched.csv")
+
+    results, _ = results, _ = run_parallel(enrich_record, records, max_workers=20, show_progress=True)
+
+    write_csv(out_csv, results, fieldnames=[
         "domain", "ip", "asn", "network_name",
         "country", "region", "city", "provider"
     ])
-    print(f"[+] Enriched data saved to {out}")
+
+    print(f"[+] Enriched data saved to {out_csv}")
 
 def run_filter(input_path, keywords):
-    from utils.display import export_grouped_domains_txt
-
+    
     domains = [row["fqdn"] for row in read_csv(input_path)]
+
     scored = score_domains_parallel(domains, keywords, show_progress=True)
 
     out_csv = input_path.replace(".csv", "_filtered.csv")
@@ -120,13 +134,18 @@ def run_filter(input_path, keywords):
     data = []
     for fqdn, score in scored:
         type_ = "subdomain" if is_subdomain(fqdn) else "root"
-        data.append({"fqdn": fqdn, "score": score, "type": type_})
+        criticity = score_to_label(score)
+        data.append({
+            "fqdn": fqdn,
+            "score": score,
+            "type": type_,
+            "criticité": criticity
+        })
 
-    write_csv(out_csv, data, fieldnames=["fqdn", "score", "type"])
-    export_grouped_domains_txt(data, out_txt)
+    write_csv(out_csv, data, fieldnames=["fqdn", "score", "type", "criticité"])
+    export_root_vs_sub_txt(data, out_txt)
 
     print(f"[+] Filtered and scored domains saved to:\n  - {out_csv}\n  - {out_txt}")
-
 
 def main():
     show_banner()
@@ -137,8 +156,8 @@ def main():
 
     cmd = sys.argv[1]
 
-    if cmd == "discover" and len(sys.argv) == 3:
-        run_discover(sys.argv[2])
+    if cmd == "discover" and len(sys.argv) >= 3:
+        run_discover(sys.argv[2:])
     elif cmd == "enum" and len(sys.argv) == 3:
         run_enum(sys.argv[2])
     elif cmd == "resolve" and len(sys.argv) == 3:

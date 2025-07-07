@@ -7,6 +7,7 @@ import requests
 import whois
 import dns.resolver
 import tldextract
+import tldextract
 from datetime import datetime
 from typing import List, Tuple, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -26,11 +27,11 @@ def get_whois_org(domain: str) -> str:
     Return the registrant organization from WHOIS, or empty string if unavailable.
     """
     try:
-        w = whois.whois(domain)
-        org = w.get("org") or w.get("registrant_organization") or ""
-        return org if isinstance(org, str) else org[0]
+        org = get_whois_org(d).lower()
+        if not any(kw in org for kw in kws):
+            score += 20
     except Exception:
-        return ""
+        score += 10  # on considère que l'absence d'infos WHOIS est suspecte
 
 def get_soa_mname(domain: str) -> str:
     """
@@ -70,95 +71,88 @@ def detect_language(domain: str, keywords: List[str]) -> str:
         return ""
     except Exception:
         return ""
+    
+def get_base_domain(domain: str) -> str:
+    ext = tldextract.extract(domain)
+    return f"{ext.domain}.{ext.suffix}"
+
+def is_root_domain(fqdn: str) -> bool:
+    return fqdn == get_base_domain(fqdn)
+
+def is_subdomain(fqdn: str) -> bool:
+    """
+    Determine if a FQDN is a true subdomain (not equal to its base domain).
+    Example:
+        bnp.fr               → root domain
+        www.bnp.fr           → subdomain
+        api.client.bnp.fr    → subdomain
+    """
+    return not is_root_domain(fqdn)
+
+def has_https(domain: str) -> bool:
+    """
+    Return True if HTTPS is available and responds correctly.
+    """
+    try:
+        r = requests.head(f"https://{domain}", timeout=5, allow_redirects=True)
+        return r.status_code < 400
+    except Exception:
+        return False
 
 def score_domain(domain: str, keywords: List[str]) -> int:
     """
-    Full scoring with network calls.
-
-    :param domain: FQDN to score
-    :param keywords: List of target keywords
-    :return: Score between 0 and 100
+    Return a risk-based score indicating how much the domain should be reviewed.
+    Higher score = more suspicious or needs admin attention.
     """
     d = domain.lower()
     kws = [kw.lower() for kw in keywords]
     score = 0
-
-    # ===== Bonus principaux =====
-    # Exact root match (.com / .fr)
-    for kw in kws:
-        if d == f"{kw}.com" or d == f"{kw}.fr":
-            score += 100
-            break
-
-    # Trusted TLDs
-    if d.endswith((".com", ".fr", ".net")):
-        score += 20
-
-    # Keyword as whole word
-    for kw in kws:
-        if re.search(rf"(^|\W){re.escape(kw)}(\W|$)", d):
-            score += 40
-            break
-
-    # Legitimate subdomain pattern (e.g. api.<keyword>.com)
     ext = tldextract.extract(d)
-    for kw in kws:
-        if ext.subdomain and ext.domain.replace("-", "") == kw:
+
+    # Absence de HTTPS = hautement suspect
+    if not has_https(d):
+        score += 30
+
+    # TLD douteux
+    if d.endswith((".xyz", ".top", ".click", ".site", ".club")):
+        score += 40
+
+    # Sous-domaine technique / potentiellement sensible
+    if re.search(r"(dev|test|beta|vpn|backup|api|secure|auth|admin)", d):
+        score += 25
+
+    # Mots sensibles d’interface utilisateur
+    for word in ["login", "client", "mobile", "intranet", "account", "portal"]:
+        if word in d:
             score += 25
             break
 
-    # Geographic suffix
-    if d.endswith((".fr", ".eu", ".be", ".lu")):
-        score += 10
-
-    # Business keywords
-    for word in ["secure", "login", "client", "mobile", "intranet"]:
-        if word in d:
-            score += 10
-            break
-
-    # HTTP alive?
+    # Domaine actif HTTP mais WHOIS non corrélé
     if get_http_status(d) == 200:
-        score += 15
-
-    # WHOIS org contains keyword?
-    org = get_whois_org(d).lower()
-    for kw in kws:
-        if kw in org:
-            score += 50
-            break
-
-    # SOA MNAME contains keyword?
-    soa = get_soa_mname(d).lower()
-    for kw in kws:
-        if kw in soa:
+        org = get_whois_org(d).lower()
+        if not any(kw in org for kw in kws):
             score += 20
-            break
 
-    # Language detection (French)
-    if detect_language(d, kws) == "fr":
+    # SOA distant ou inconnu
+    soa = get_soa_mname(d).lower()
+    if soa and not any(kw in soa for kw in kws):
         score += 10
 
-    # Domain age ≥ 5 ans
-    if get_domain_age(d) >= 5:
-        score += 10
+    # Page non francophone (si ciblage FR)
+    if detect_language(d, kws) != "fr":
+        score += 5
 
-    # ===== Malus automatiques =====
-    if re.search(rf"(^|\W)(dev|test|beta|staging|temp|demo)(\W|$)", d):
-        score -= 30
-    if d.endswith((".xyz", ".site", ".click", ".top", ".club")):
-        score -= 20
+    # Nom trop long
     if len(d) > 40:
-        score -= 15
+        score += 10
 
-    # Pas de DNS = score 0
+    # DNS inexistant → score nul
     try:
         socket.gethostbyname(d)
     except Exception:
         return 0
 
-    # Clamp final
-    return max(0, min(100, score))
+    return min(100, score)
 
 
 def score_domains_parallel(
@@ -209,17 +203,12 @@ def score_domains_parallel(
 
     return sorted(results, key=lambda x: x[1], reverse=True)
 
-
-def is_subdomain(domain: str) -> bool:
-    """
-    Determine if a domain is a true subdomain (excluding 'www.domain.tld').
-
-    :param domain: FQDN to evaluate
-    :return: True if it's a subdomain, False otherwise
-    """
-    parts = domain.split(".")
-    if len(parts) <= 2:
-        return False
-    if len(parts) == 3 and parts[0] == "www":
-        return False
-    return True
+def score_to_label(score: int) -> str:
+    if score >= 80:
+        return "critique"
+    elif score >= 60:
+        return "suspect"
+    elif score >= 40:
+        return "surveiller"
+    else:
+        return "ok"

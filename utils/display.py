@@ -26,3 +26,33 @@ def export_grouped_domains_txt(data, output_path, score_key="score", fqdn_key="f
                 for d in subs:
                     f.write(f"    - {d}\n")
             f.write("\n")
+
+
+# utils/display.py
+
+from occulusint.core.domain_filter import is_subdomain
+
+def export_root_vs_sub_txt(data, output_path, fqdn_key="fqdn"):
+    """
+    Exporte deux groupes simples : root domains vs subdomains dans un fichier texte.
+    """
+    roots = []
+    subs = []
+
+    for row in data:
+        fqdn = row.get(fqdn_key, "")
+        if is_subdomain(fqdn):
+            subs.append(fqdn)
+        else:
+            roots.append(fqdn)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        if roots:
+            f.write("== Root domains ==\n")
+            for d in sorted(roots):
+                f.write(f"  - {d}\n")
+            f.write("\n")
+        if subs:
+            f.write("== Subdomains ==\n")
+            for d in sorted(subs):
+                f.write(f"  - {d}\n")

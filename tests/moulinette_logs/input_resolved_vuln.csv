@@ -1,0 +1,3 @@
+domain,ip,ports,vulns,product,version,http.title,ssh.banner,ssl.cipher,ssl.cert.subject.CN,os,org,asn
+bnpparibas.com,23.43.136.171,80;443,,AkamaiGHost,,Invalid URL,,"{'version': 'TLSv1.3', 'bits': 256, 'name': 'TLS_AES_256_GCM_SHA384'}",group.bnpparibas,,"Akamai International, BV",AS16625
+example.com,96.7.128.198,80;443,,AkamaiGHost,,Invalid URL,,"{'version': 'TLSv1.3', 'bits': 256, 'name': 'TLS_AES_256_GCM_SHA384'}",a248.e.akamai.net,,"Akamai Technologies, Inc.",AS20940

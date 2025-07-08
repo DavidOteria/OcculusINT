@@ -1,0 +1,3 @@
+fqdn,score,type,criticité
+bnpparibas.com,30,root,ok
+example.com,0,root,ok

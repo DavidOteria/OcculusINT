@@ -2,6 +2,16 @@ from collections import defaultdict
 from occulusint.core.domain_filter import is_subdomain
 
 def export_grouped_domains_txt(data, output_path, score_key="score", fqdn_key="fqdn", min_score=50):
+    """
+    Write domains grouped by score to a text file.
+
+    :param data: Iterable of dicts containing at least *score_key* and *fqdn_key*
+    :param output_path: Destination .txt file
+    :param score_key: Dict key where the score is stored (default "score")
+    :param fqdn_key: Dict key for the FQDN (default "fqdn")
+    :param min_score: Minimum score to include in the output
+    :return: None
+    """
     score_map = defaultdict(list)
     for entry in data:
         try:
@@ -27,14 +37,14 @@ def export_grouped_domains_txt(data, output_path, score_key="score", fqdn_key="f
                     f.write(f"    - {d}\n")
             f.write("\n")
 
-
-# utils/display.py
-
-from occulusint.core.domain_filter import is_subdomain
-
 def export_root_vs_sub_txt(data, output_path, fqdn_key="fqdn"):
     """
-    Exporte deux groupes simples : root domains vs subdomains dans un fichier texte.
+    Split a list of FQDNs into root domains vs sub-domains and write a text file.
+
+    :param data: Iterable of dicts containing at least *fqdn_key*
+    :param output_path: Destination .txt file
+    :param fqdn_key: Dict key for the FQDN (default "fqdn")
+    :return: None
     """
     roots = []
     subs = []

@@ -175,7 +175,14 @@ def run_filter(input_path, keywords):
     :param keywords: list/iterable of keywords used for scoring
     :return: None – writes *_filtered.csv + *_filtered.txt
     """
-    domains = [row["fqdn"] for row in read_csv(input_path)]
+    
+    rows = read_csv(input_path)
+    domains = []
+
+    for row in rows:
+        fqdn = row.get("fqdn") or row.get("domain")
+        if fqdn:
+            domains.append(fqdn.strip())
 
     scored = score_domains_parallel(domains, keywords, show_progress=True)
 

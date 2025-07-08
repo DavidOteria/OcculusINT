@@ -210,3 +210,5 @@ __marimo__/
 targets/
 targets/*
 
+# Tests
+tests/*

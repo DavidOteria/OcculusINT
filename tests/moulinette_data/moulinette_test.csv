@@ -1,0 +1,15 @@
+fqdn,ip
+bnpparibas.com,
+login.bnpparibas.com,
+bnpparibas..com,
+xn--bonjour-fva.com,
+localhost,
+0.0.0.0,
+192.168.1.1,
+log!n.bnpparibas.com,
+example.com,93.184.216.34
+invalid-entry,not_an_ip
+exemple,999.999.999.999
+127.0.0.1,127.0.0.1
+,8.8.8.8
+" ",192.0.2.1

@@ -54,6 +54,12 @@ Steps:
 """)
 
 def run_discover(keywords):
+    """
+    Discover root domains via crt.sh and save to CSV.
+
+    :param keywords: list of strings used as crt.sh search keywords
+    :return: None – writes targets/<joined>_domains.csv
+    """
     domains = discover_domains_from_crtsh(keywords)
     os.makedirs("targets", exist_ok=True)
     joined = "_".join(keywords)
@@ -86,6 +92,12 @@ def run_enum(domain: str):
     print(f"[✔] Subdomains saved to {out_path}")
 
 def run_resolve(input_path):
+    """
+    Resolve every FQDN in <input_path> to its IP address.
+
+    :param input_path: CSV containing 'fqdn' or 'domain' column
+    :return: None – writes *_resolved.csv
+    """
     rows = read_csv(input_path)
 
     domains = [
@@ -105,6 +117,13 @@ def run_resolve(input_path):
     print(f"[+] Resolved IPs saved to {out}")
 
 def run_passive_vuln(input_csv: str, api_key: str):
+    """
+    Enrich <input_csv> with Shodan data and compute scores.
+
+    :param input_csv: <name>_resolved.csv
+    :param api_key: Shodan API key
+    :return: None – writes *_vuln.csv and *_vuln_score.csv
+    """
     out_vuln       = input_csv.replace(".csv", "_vuln.csv")
     out_vuln_score = input_csv.replace(".csv", "_vuln_score.csv")
     passive_vuln_scan(
@@ -117,6 +136,12 @@ def run_passive_vuln(input_csv: str, api_key: str):
     print(f"[+] Score file: {out_vuln_score}")
 
 def run_enrich(input_csv):
+    """
+    Add ASN / geolocation / cloud info to each (domain, IP) row.
+
+    :param input_csv: *_resolved.csv
+    :return: None – writes *_enriched.csv
+    """
     records_raw = read_csv(input_csv)
 
     # Normalise l’entrée
@@ -143,6 +168,13 @@ def run_enrich(input_csv):
     print(f"[+] Enriched data saved to {out_csv}")
 
 def run_filter(input_path, keywords):
+    """
+    Score and filter domains according to keyword set.
+
+    :param input_path: CSV to score
+    :param keywords: list/iterable of keywords used for scoring
+    :return: None – writes *_filtered.csv + *_filtered.txt
+    """
     
     rows = read_csv(input_path)
     domains = []

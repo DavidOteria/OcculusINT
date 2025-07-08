@@ -6,7 +6,6 @@ from utils.csv import read_csv, write_csv
 from utils.threading import run_parallel
 from utils.display import export_grouped_domains_txt
 from utils.nvd_cache import load_cache
-from utils.files import build_outfile
 from occulusint.recon.domain_discovery import discover_domains_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
 from occulusint.recon.resolve import resolve_domains
@@ -86,12 +85,16 @@ def run_resolve(input_path):
     print(f"[+] Resolved IPs saved to {out}")
 
 def run_passive_vuln(input_csv: str, api_key: str):
-    out_vuln  = build_outfile(input_csv, "vuln")
-    out_score = build_outfile(input_csv, "vuln_score")      # simple réutilisation
-
-    passive_vuln_scan(input_csv, out_vuln, api_key)         # génère out_vuln et out_score
-    print(f"[+] Vuln file : {out_vuln}")
-    print(f"[+] Score file: {out_score}")
+    out_vuln       = input_csv.replace(".csv", "_vuln.csv")
+    out_vuln_score = input_csv.replace(".csv", "_vuln_score.csv")
+    passive_vuln_scan(
+        input_csv,
+        out_vuln,
+        api_key,
+        score_path=out_vuln_score
+    )
+    print(f"[+] Vuln  file : {out_vuln}")
+    print(f"[+] Score file: {out_vuln_score}")
 
 def run_enrich(input_csv):
     records = read_csv(input_csv)

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from occulusint.core.domain_filter import is_subdomain
+from occulusint.core.filter import is_subdomain
 
 def export_grouped_domains_txt(data, output_path, score_key="score", fqdn_key="fqdn", min_score=50):
     """

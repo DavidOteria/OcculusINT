@@ -16,7 +16,7 @@ from occulusint.enrich.ip_enrichment import (
     get_geolocation,
     detect_cloud_provider
 )
-from occulusint.core.domain_filter import (
+from occulusint.core.filter import (
     score_domains_parallel,
     is_subdomain,
     score_to_label

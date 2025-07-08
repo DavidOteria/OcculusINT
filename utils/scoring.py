@@ -1,12 +1,6 @@
-"""Security‑score computation for the passive vuln scan.  All constants are
-co‑located for easy tuning.
-"""
-
-from __future__ import annotations
-
 import re
+from __future__ import annotations
 from typing import Dict, Tuple
-
 from .nvd_cache import get_cvss
 
 # ------------------------------------------------------------

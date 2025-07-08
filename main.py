@@ -9,7 +9,7 @@ from utils.enrich import enrich_record
 from utils.nvd_cache import load_cache
 from occulusint.recon.domain_discovery import discover_domains_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
-from occulusint.recon.resolve import resolve_domains
+from occulusint.recon.resolve import resolve_domains, is_reachable
 from occulusint.vuln.passive_vuln import passive_vuln_scan
 from occulusint.enrich.ip_enrichment import (
     get_asn_info,
@@ -106,9 +106,18 @@ def run_resolve(input_path):
         return
 
     results = resolve_domains(domains)
+    
     out = input_path.replace(".csv", "_resolved.csv")
-    data = [{"domain": d, "ip": ip} for d, ip in results.items()]
-    write_csv(out, data, fieldnames=["domain", "ip"])
+    data = []
+    for d, ip in results.items():
+        reachable = is_reachable(ip)
+        data.append({
+            "domain": d,
+            "ip": ip,
+            "reachable": reachable
+            })
+    write_csv(out, data, fieldnames=["domain", "ip", "reachable"])
+
     print(f"[+] Resolved IPs saved to {out}")
 
 def run_passive_vuln(input_csv: str, api_key: str):

@@ -30,9 +30,12 @@ occulusint/
 │   ├── domains_discovery.py     ← crt.sh extraction
 │   ├── subdomains.py         ← Sub3num wrapper
 │   └── resolve.py            ← DNS resolution
-└── enrich/
+├── enrich/
+│   ├── __init__.py
+│   └── ip_enrichment.py      ← ASN, GEO, Cloud, etc.
+└── vuln/
     ├── __init__.py
-    └── ip_enrichment.py      ← ASN, GEO, Cloud, etc.
+    └── passive_vuln.py       ← Shodan OSINT + CVSS scoring
 ```
 ---
 
@@ -50,6 +53,7 @@ OcculusINT is a modular and extensible OSINT toolkit designed to map and score a
 - DNS resolution & IP mapping
 - ASN & geolocation enrichment (RDAP + ip-api)
 - Cloud provider detection (AWS, Azure, GCP, OVH…)
+- Passive vulnerability scan via Shodan (CVSS-aware scoring)
 - Heuristic scoring system for triage
 - Exportable results (CSV, TXT)
 - One-file CLI orchestration: `main.py`
@@ -83,6 +87,8 @@ Available commands:
 - googledork → Extract subdomains via Google results
 - resolve → Resolve all domains to IP addresses
 - enrich → Enrich IPs with ASN, geolocation, provider
+- passive-vuln → Passive vuln scan + scoring
+- update-nvd → Refresh local CVSS feed
 - filter → Score and filter most relevant domains
 
 ## Examples 
@@ -93,6 +99,8 @@ python main.py enum targets/example_domains.txt
 python main.py googledork example.com
 python main.py resolve targets/example_subdomains.txt
 python main.py enrich targets/example_subdomains_resolved.csv
+python main.py passive-vuln targets/example_subdomains_resolved.csv YOUR_SHODAN_KEY
+python main.py update-nvd 
 python main.py filter targets/example_subdomains.txt example1 example2 example3
 ```
 
@@ -117,6 +125,18 @@ Low-quality TLDs, dev/test keywords, and long or unresolved domains are penalize
 
 ---
 
+### Vuln Scoring grid
+
+- **TLS (max 25)**
+
+- **Vulnerabilities (max 35)**  
+
+- **Exposure (max 25)**
+
+- **Hygiene (max 15)**
+
+Total = TLS + Vuln + Exposure + Hygiene **(0 → 100)**.
+
 ## Output Files
 
 All outputs are saved to the /targets/ directory:
@@ -126,6 +146,8 @@ All outputs are saved to the /targets/ directory:
 - ..._resolved.csv
 - ..._enriched.csv
 - ..._filtered.txt
+- ..._vuln.csv
+- ..._vuln_score.csv
 
 --- 
 
@@ -143,7 +165,8 @@ ll core functionalities are separated into modules:
 occulusint/
 ├── recon/
 ├── core/
-└── enrich/
+├── enrich/
+└── vuln/
 ```
 
 You can reuse or plug in new engines easily.

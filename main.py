@@ -57,26 +57,22 @@ def run_discover(keywords):
     write_csv(out_path, data, fieldnames=["fqdn"])
     print(f"[+] Domains saved to {out_path}")
 
-def run_enum(domain: str):
-    """
-    Enumerate subdomains for a single domain using all available engines.
-    Results are saved to 'targets/<domain>_subdomains.csv'.
 
-    :param domain: Root domain to enumerate (e.g. 'bnpparibas.com')
-    """
+def run_enum(input_path):
+    roots = [row["fqdn"] for row in read_csv(input_path)]
     enumerator = SubdomainsEnumerator()
 
-    print(f"[~] Enumerating subdomains for: {domain}")
-    try:
-        subs = enumerator.enumerate(domain)
-        print(f"[+] {len(subs)} subdomains found for {domain}")
-    except Exception as e:
-        print(f"[!] Enumeration failed: {e}")
-        return
+    for root in roots:
+        print(f"[~] Enumerating subdomains for: {root}")
+        try:
+            subs = enumerator.enumerate(root)
+            print(f"[+] {len(subs)} subdomains found for {root}")
+            all_subs.update(subs)
+        except Exception as e:
+            print(f"[!] Error while enumerating {root}: {e}")
 
-    os.makedirs("targets", exist_ok=True)
-    out_path = f"targets/{domain}_subdomains.csv"
-    data = [{"fqdn": sub} for sub in sorted(subs)]
+    out_path = input_path.replace(".csv", "_subdomains.csv")
+    data = [{"fqdn": sub} for sub in sorted(all_subs)]
     write_csv(out_path, data, fieldnames=["fqdn"])
     print(f"[✔] Subdomains saved to {out_path}")
 

@@ -14,7 +14,7 @@ def get_http_status(domain: str) -> int:
     Return the HTTP status code for a given domain using a HEAD request over HTTPS.
 
     :param domain: The domain name to test (e.g., 'example.com').
-    :return: The HTTP status code (e.g., 200, 301, 404), or 0 if the request fails.
+    :return: HTTP status code (e.g., 200, 404), or 0 if unreachable.
     """
     try:
         resp = requests.head(f"https://{domain}", timeout=5, allow_redirects=True)
@@ -111,14 +111,14 @@ def is_subdomain(fqdn: str) -> bool:
 
 def has_https(domain: str) -> bool:
     """
-    Return True if HTTPS is available and responds correctly.
+    Return True if an HTTPS server responds (regardless of the status code).
 
-    :param fqdn: The fully qualified domain name to test. 
-    :return: True if it's https is available 
+    :param domain: The fully qualified domain name to test. 
+    :return: True if HTTPS responds (even 404 or 403), False if timeout/refused.
     """
     try:
-        r = requests.head(f"https://{domain}", timeout=5, allow_redirects=True)
-        return r.status_code < 400
+        requests.head(f"https://{domain}", timeout=5, allow_redirects=True)
+        return True
     except Exception:
         return False
 
@@ -160,11 +160,21 @@ def score_domain(domain: str, keywords: List[str]) -> int:
             score += 25
             break
 
-    # Domaine actif HTTP mais WHOIS non corrélé
-    if get_http_status(d) == 200:
-        org = get_whois_org(d).lower()
-        if not any(kw in org for kw in kws):
-            score += 20
+    status = get_http_status(d)
+    if status > 0:
+        if status == 200:
+            score += 10  # Serveur actif avec page valide
+        elif status in {403, 401}:
+            score += 5   # Serveur actif mais restreint
+        elif status in {301, 302}:
+            score += 3   # Redirection = structure active
+        elif status >= 500:
+            score += 1   # Serveur instable = potentiellement intéressant
+
+    # WHOIS ne colle pas
+    org = get_whois_org(d).lower()
+    if not any(kw in org for kw in kws):
+        score += 10
 
     # SOA distant ou inconnu
     soa = get_soa_mname(d).lower()
@@ -185,7 +195,7 @@ def score_domain(domain: str, keywords: List[str]) -> int:
     except Exception:
         return 0
 
-    return min(100, score)
+    return min(100, score), status
 
 
 def score_domains_parallel(
@@ -193,7 +203,7 @@ def score_domains_parallel(
     keywords: List[str],
     max_workers: int = 10,
     show_progress: bool = False
-) -> List[Tuple[str, int]]:
+) -> List[Tuple[str, int, int]]:
     """
     Score a list of domains in parallel using threads (network calls in score_domain).
 
@@ -218,10 +228,10 @@ def score_domains_parallel(
         for future in as_completed(future_map):
             d = future_map[future]
             try:
-                s = future.result()
+                s, status = future.result()
             except Exception:
-                s = 0
-            results.append((d, s))
+                s, status = 0, 0
+            results.append((d, s, status))
 
             if show_progress:
                 completed += 1

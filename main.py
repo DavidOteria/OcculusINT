@@ -88,10 +88,11 @@ def run_enum(domain: str):
 
 def run_resolve(input_path):
     """
-    Resolve every FQDN in <input_path> to its IP address.
+    Resolve every FQDN in <input_path> to its IP address,
+    and check TCP reachability on port 443.
 
     :param input_path: CSV containing 'fqdn' or 'domain' column
-    :return: None – writes *_resolved.csv
+    :return: None – writes *_resolved.csv with columns [domain, ip, reachable]
     """
     rows = read_csv(input_path)
 
@@ -191,17 +192,18 @@ def run_filter(input_path, keywords):
     out_txt = input_path.replace(".csv", "_filtered.txt")
 
     data = []
-    for fqdn, score in scored:
+    for fqdn, score, status in scored:
         type_ = "subdomain" if is_subdomain(fqdn) else "root"
         criticity = score_to_label(score)
         data.append({
             "fqdn": fqdn,
             "score": score,
+            "https_status": status,
             "type": type_,
             "criticité": criticity
         })
 
-    write_csv(out_csv, data, fieldnames=["fqdn", "score", "type", "criticité"])
+    write_csv(out_csv, data, fieldnames=["fqdn", "score","https_status", "type", "criticité"])
     export_root_vs_sub_txt(data, out_txt)
 
     print(f"[+] Filtered and scored domains saved to:\n  - {out_csv}\n  - {out_txt}")

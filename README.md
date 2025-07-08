@@ -129,17 +129,12 @@ Each domain is assigned a score from 0 to 100 based on:
 
 Low-quality TLDs, dev/test keywords, and long or unresolved domains are penalized.
 
----
-
 ### Vuln Scoring grid
 
-- **TLS (max 25)**
-
-- **Vulnerabilities (max 35)**  
-
-- **Exposure (max 25)**
-
-- **Hygiene (max 15)**
+- TLS (25 pts) : Protocol version (1.3 > 1.2) and weak ciphers penalty  
+- Vulnerabilities (35 pts) :  Worst CVSS among exposed CVE IDs  
+- Exposure (25 pts) :  Risky Internet-facing ports (21 / 23 / 445 / 3389…)  
+- Hygiene (15 pts) :  Custom banner / non-default HTTP title
 
 Total = TLS + Vuln + Exposure + Hygiene **(0 → 100)**.
 

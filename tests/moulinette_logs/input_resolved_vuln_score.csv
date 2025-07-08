@@ -1,0 +1,3 @@
+domain,ip,tls_score,vuln_score,exposure_score,hygiene_score,total_score
+bnpparibas.com,23.43.136.171,25,35,25,15,100
+example.com,96.7.128.198,25,35,25,15,100

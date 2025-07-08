@@ -1,5 +1,3 @@
-# occulusint/core/domain_filter.py
-
 import sys
 import re
 import socket
@@ -14,7 +12,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def get_http_status(domain: str) -> int:
     """
-    Return HTTP status code for a given domain using a HEAD request.
+    Return the HTTP status code for a given domain using a HEAD request over HTTPS.
+
+    :param domain: The domain name to test (e.g., 'example.com').
+    :return: The HTTP status code (e.g., 200, 301, 404), or 0 if the request fails.
     """
     try:
         resp = requests.head(f"https://{domain}", timeout=5, allow_redirects=True)
@@ -24,18 +25,24 @@ def get_http_status(domain: str) -> int:
 
 def get_whois_org(domain: str) -> str:
     """
-    Return the registrant organization from WHOIS, or empty string if unavailable.
+    Retrieve the registrant organization from the WHOIS record of a domain.
+
+    :param domain: The domain name to query (e.g., 'example.com').
+    :return: The organization name as a lowercase string, or an empty string if unavailable.
     """
     try:
-        org = get_whois_org(d).lower()
-        if not any(kw in org for kw in kws):
-            score += 20
+        info = whois.whois(domain)
+        org = info.get("org") or ""
+        return str(org).strip()
     except Exception:
-        score += 10  # on considère que l'absence d'infos WHOIS est suspecte
+        return ""
 
 def get_soa_mname(domain: str) -> str:
     """
-    Return the MNAME (primary nameserver) field from the domain's SOA record.
+    Retrieve the MNAME (primary nameserver) field from the SOA record of a domain.
+
+    :param domain: The domain name to query (e.g., 'example.com').
+    :return: The MNAME value as a string (without trailing dot), or an empty string if not found.
     """
     try:
         answers = dns.resolver.resolve(domain, "SOA", lifetime=5)
@@ -60,7 +67,10 @@ def get_domain_age(domain: str) -> int:
 
 def detect_language(domain: str, keywords: List[str]) -> str:
     """
-    Quick check to infer if the default page language matches any keyword.
+    Estimate the domain's age in years, based on the WHOIS creation_date field.
+
+    :param domain: The domain name to query (e.g., 'example.com').
+    :return: Domain age in full years. Returns 0 if the creation date is unavailable or invalid.
     """
     try:
         resp = requests.get(f"https://{domain}", timeout=5)
@@ -73,25 +83,39 @@ def detect_language(domain: str, keywords: List[str]) -> str:
         return ""
     
 def get_base_domain(domain: str) -> str:
+    """
+    Extract the base domain (e.g., 'example.com') from any FQDN or subdomain.
+
+    :param domain: A full domain or subdomain (e.g., 'api.example.com').
+    :return: The base domain (e.g., 'example.com').
+    """
     ext = tldextract.extract(domain)
     return f"{ext.domain}.{ext.suffix}"
 
 def is_root_domain(fqdn: str) -> bool:
+    """
+    Check if a FQDN is the root/base domain.
+
+    :param fqdn: The fully qualified domain name to test.
+    :return: True if it matches its base domain (e.g., 'example.com').
+    """
     return fqdn == get_base_domain(fqdn)
 
 def is_subdomain(fqdn: str) -> bool:
     """
-    Determine if a FQDN is a true subdomain (not equal to its base domain).
-    Example:
-        bnp.fr               → root domain
-        www.bnp.fr           → subdomain
-        api.client.bnp.fr    → subdomain
+    Determine if a FQDN is a subdomain (i.e., not equal to its base domain).
+
+    :param fqdn: The fully qualified domain name to test.
+    :return: True if it's a subdomain (e.g., 'api.example.com').
     """
     return not is_root_domain(fqdn)
 
 def has_https(domain: str) -> bool:
     """
     Return True if HTTPS is available and responds correctly.
+
+    :param fqdn: The fully qualified domain name to test. 
+    :return: True if it's https is available 
     """
     try:
         r = requests.head(f"https://{domain}", timeout=5, allow_redirects=True)
@@ -101,8 +125,18 @@ def has_https(domain: str) -> bool:
 
 def score_domain(domain: str, keywords: List[str]) -> int:
     """
-    Return a risk-based score indicating how much the domain should be reviewed.
-    Higher score = more suspicious or needs admin attention.
+    Compute a heuristic score indicating the risk or interest level of a domain.
+
+    Criteria:
+    - +30 if the domain or subdomain contains suspicious or sensitive keywords
+    - +15 if HTTPS is available (suggests real infra)
+    - +20 if the domain is a subdomain (more attack surface)
+    - +10 if domain contains digits (e.g., staging1, test2)
+    - +5  if domain length is unusually long
+
+    :param domain: Domain or subdomain to evaluate.
+    :param keywords: List of keywords considered sensitive or business-related.
+    :return: Integer score (higher = more interesting/suspicious)
     """
     d = domain.lower()
     kws = [kw.lower() for kw in keywords]
@@ -204,6 +238,12 @@ def score_domains_parallel(
     return sorted(results, key=lambda x: x[1], reverse=True)
 
 def score_to_label(score: int) -> str:
+    """
+    Map a numeric risk score to a qualitative label.
+
+    :param score: An integer score (typically between 0 and 100).
+    :return: One of the labels: "critique", "suspect", "surveiller", or "ok".
+    """
     if score >= 80:
         return "critique"
     elif score >= 60:

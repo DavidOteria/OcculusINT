@@ -144,7 +144,13 @@ def run_enrich(input_csv):
 
 def run_filter(input_path, keywords):
     
-    domains = [row["fqdn"] for row in read_csv(input_path)]
+    rows = read_csv(input_path)
+    domains = []
+
+    for row in rows:
+        fqdn = row.get("fqdn") or row.get("domain")
+        if fqdn:
+            domains.append(fqdn.strip())
 
     scored = score_domains_parallel(domains, keywords, show_progress=True)
 

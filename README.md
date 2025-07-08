@@ -15,27 +15,31 @@ OcculusINT/
 ├── requirements.txt          ← All dependencies
 ├── LICENSE                   ← MIT License
 ├── targets/                  ← Generated output files (.txt, .csv)
-└── occulusint/               ← Python modules (importable)
+├── occulusint/               ← Python modules (importable)
+└── utils/                    ← shared helpers (CSV, cache, threading, display…)
 ```
 
 ### Core Modules 
 ```cpp
 occulusint/
-├── __init__.py
 ├── core/
-│   ├── __init__.py
 │   └── domain_filter.py      ← Scoring + filtering logic
 ├── recon/
-│   ├── __init__.py
 │   ├── domains_discovery.py     ← crt.sh extraction
 │   ├── subdomains.py         ← Sub3num wrapper
 │   └── resolve.py            ← DNS resolution
 ├── enrich/
-│   ├── __init__.py
 │   └── ip_enrichment.py      ← ASN, GEO, Cloud, etc.
-└── vuln/
-    ├── __init__.py
-    └── passive_vuln.py       ← Shodan OSINT + CVSS scoring
+├── vuln/
+│   └── passive_vuln.py       ← Shodan OSINT + CVSS scoring
+└── utils/                    ← Generic helpers
+    ├── csv.py               ← read_csv / write_csv wrappers
+    ├── display.py           ← TXT exporters (scores, roots vs subs)
+    ├── threading.py         ← run_parallel with progress bar
+    ├── nvd_cache.py         ← Local CVSS (NVD) cache
+    ├── scoring.py           ← 0-100 host scoring logic
+    ├── shodan_helpers.py    ← Shodan + InternetDB query & cache
+    └── dns_resolver.py      ← One-shot public DNS resolver
 ```
 ---
 
@@ -166,7 +170,8 @@ occulusint/
 ├── recon/
 ├── core/
 ├── enrich/
-└── vuln/
+├── vuln/
+└── utils/
 ```
 
 You can reuse or plug in new engines easily.

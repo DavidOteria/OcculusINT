@@ -1,0 +1,4 @@
+== Root domains ==
+  - bnpparibas.com
+  - example.com
+

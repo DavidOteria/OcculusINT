@@ -37,11 +37,6 @@ def export_grouped_domains_txt(data, output_path, score_key="score", fqdn_key="f
                     f.write(f"    - {d}\n")
             f.write("\n")
 
-
-# utils/display.py
-
-from occulusint.core.domain_filter import is_subdomain
-
 def export_root_vs_sub_txt(data, output_path, fqdn_key="fqdn"):
     """
     Split a list of FQDNs into root domains vs sub-domains and write a text file.

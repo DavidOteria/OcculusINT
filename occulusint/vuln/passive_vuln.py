@@ -3,6 +3,7 @@ import ipaddress
 import pathlib
 import requests
 from typing import Any, Dict, List, Optional
+from pathlib import Path
 from shodan import Shodan, APIError
 from utils.shodan_helpers import (
     extract_nested,
@@ -11,14 +12,9 @@ from utils.shodan_helpers import (
 )
 from utils.scoring import compute_security_score
 
-
 FIELDS_BANNER = [
-    "product",
-    "version",
-    "http.title",
-    "ssh.banner",
-    "ssl.cipher",
-    "ssl.cert.subject.CN",
+    "product", "version", "http.title", "ssh.banner",
+    "ssl.cipher", "ssl.cert.subject.CN",
 ]
 
 CSV_FIELD_ORDER = [
@@ -27,27 +23,33 @@ CSV_FIELD_ORDER = [
     "ssh.banner", "ssl.cipher", "ssl.cert.subject.CN",
     "os", "org", "asn"
 ]
+
+
 def passive_vuln_scan(
-    input_csv: str | pathlib.Path,
-    output_csv: str | pathlib.Path,
+    input_csv: str | Path,
+    output_csv: str | Path,
     api_key: Optional[str],
-    use_internetdb: bool = False) -> None:
+    *,
+    score_path: str | Path | None = None,
+    use_internetdb: bool = False,
+) -> None:
+    """
+    Passive vulnerability enrichment + scoring.
+
+    :param input_csv:  <name>_resolved.csv (must contain 'ip')
+    :param output_csv: Path for <name>_vuln.csv
+    :param api_key:   Shodan API key (ignored if use_internetdb=True)
+    :param score_path: Explicit <name>_vuln_score.csv path (auto-derived if None)
+    :param use_internetdb: Query free InternetDB instead of Shodan
+    :return: None (writes two CSV files)
+    """
     if not use_internetdb and not api_key:
         raise ValueError("Shodan API key required unless use_internetdb=True")
-    
-    """
-    Passive vulnerability scan using Shodan or InternetDB.
-    :param input_csv: Input file path with 'ip' (and optional 'domain') columns
-    :param output_csv: Output path for enriched vulnerabilities
-    :param api_key: Shodan API key (ignored if use_internetdb=True)
-    :param use_internetdb: If True, use public InternetDB instead of Shodan
 
-    Enriches input CSV (IP, domain) with OSINT data and writes two outputs:
-    - <name>_vuln.csv: raw info (ports, CVEs, banner metadata)
-    - <name>_score.csv: computed scores (tls/vuln/exposure/hygiene)"""
-
-    input_csv = pathlib.Path(input_csv)
-    output_csv = pathlib.Path(output_csv)
+    input_csv = Path(input_csv)
+    output_csv = Path(output_csv)
+    score_path = Path(score_path) if score_path else \
+        output_csv.with_name(output_csv.stem.replace("_vuln", "_vuln_score") + ".csv")
 
     unique_ips: Dict[str, Dict[str, Any]] = {}
 
@@ -90,10 +92,10 @@ def passive_vuln_scan(
         for banner in data.get("data", []):
             for field in FIELDS_BANNER:
                 if field not in row:
-                    value = extract_nested(banner, field)
-                    if value:
-                        row[field] = str(value)
-            if all(field in row for field in FIELDS_BANNER):
+                    val = extract_nested(banner, field)
+                    if val:
+                        row[field] = str(val)
+            if all(f in row for f in FIELDS_BANNER):
                 break
 
         unique_ips[ip] = row
@@ -105,21 +107,27 @@ def passive_vuln_scan(
 
     print(f"[+] Vuln report saved to {output_csv}")
 
-    score_path = output_csv.with_name(output_csv.stem.replace("_vuln", "_score") + ".csv")
     with score_path.open("w", newline="", encoding="utf-8") as f_score:
-        writer = csv.DictWriter(f_score, fieldnames=[
-            "domain", "ip", "tls_score", "vuln_score", "exposure_score", "hygiene_score", "total_score"
-        ])
+        writer = csv.DictWriter(
+            f_score,
+            fieldnames=[
+                "domain", "ip",
+                "tls_score", "vuln_score",
+                "exposure_score", "hygiene_score",
+                "total_score"
+            ],
+        )
         writer.writeheader()
         for row in unique_ips.values():
-            total, breakdown = compute_security_score(row)
+            total, br = compute_security_score(row)
             writer.writerow({
                 "domain": row["domain"],
                 "ip": row["ip"],
-                "tls_score": breakdown["tls"],
-                "vuln_score": breakdown["vuln"],
-                "exposure_score": breakdown["exposure"],
-                "hygiene_score": breakdown["hygiene"],
-                "total_score": total
+                "tls_score": br["tls"],
+                "vuln_score": br["vuln"],
+                "exposure_score": br["exposure"],
+                "hygiene_score": br["hygiene"],
+                "total_score": total,
             })
+
     print(f"[+] Score report saved to {score_path}")

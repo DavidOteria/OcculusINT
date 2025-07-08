@@ -31,9 +31,12 @@ occulusint/
 │   ├── domains_discovery.py     ← crt.sh extraction
 │   ├── subdomains.py         ← Sub3num wrapper
 │   └── resolve.py            ← DNS resolution
-└── enrich/
+├── enrich/
+│   ├── __init__.py
+│   └── ip_enrichment.py      ← ASN, GEO, Cloud, etc.
+└── vuln/
     ├── __init__.py
-    └── ip_enrichment.py      ← ASN, GEO, Cloud, etc.
+    └── passive_vuln.py       ← Shodan OSINT + CVSS scoring
 ```
 ---
 
@@ -85,7 +88,7 @@ Available commands:
 - googledork → Extract subdomains via Google results
 - resolve → Resolve all domains to IP addresses
 - enrich → Enrich IPs with ASN, geolocation, provider
-- passive-vuln → Passive vuln scan + score
+- passive-vuln → Passive vuln scan + scoring
 - update-nvd → Refresh local CVSS feed
 - filter → Score and filter most relevant domains
 
@@ -123,32 +126,15 @@ Low-quality TLDs, dev/test keywords, and long or unresolved domains are penalize
 
 ---
 
-### Scoring grid — how the **0-100** rating is calculated
+### Vuln Scoring grid
 
 - **TLS (max 25)**
-  - TLS 1.3 → **25 pts**
-  - TLS 1.2 → **15 pts**
-  - ≤ TLS 1.1 → **0 pts**
-  - – 10 pts if cipher contains *RC4*, *3DES* or *DES*
 
 - **Vulnerabilities (max 35)**  
-  *(worst CVSS among all CVE for the host)*
-  - No CVE             → **35 pts**
-  - Low   (0.0 – 3.9)  → **25 pts**
-  - Medium (4.0 – 6.9) → **15 pts**
-  - High  (7.0 – 8.9)  → **5 pts**
-  - Critical (9 – 10)  → **0 pts**
 
 - **Exposure (max 25)**
-  - Start at **25 pts**
-  - – 10 pts if **21 / 23 / 445 / 3389** are open
-  - – 5 pts if any other privileged port (< 1024) is open  
-    *(80 & 443 excluded)*
-  - Floor = 0 pts
 
 - **Hygiene (max 15)**
-  - Custom HTTP title (not *default / test / welcome*) → **15 pts**
-  - Otherwise → **5 pts**
 
 Total = TLS + Vuln + Exposure + Hygiene **(0 → 100)**.
 

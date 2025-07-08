@@ -5,7 +5,6 @@ import requests
 import whois
 import dns.resolver
 import tldextract
-import tldextract
 from datetime import datetime
 from typing import List, Tuple, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed

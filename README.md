@@ -112,6 +112,8 @@ python main.py filter targets/example_subdomains.txt example1 example2 example3
 
 ## Scoring Logic
 
+### Filtering Logic
+
 Each domain is assigned a score from 0 to 100 based on:
 
 - Match with keywords (test, google, etc.)

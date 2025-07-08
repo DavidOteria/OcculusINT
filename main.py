@@ -67,7 +67,7 @@ def run_enum(domain: str):
     Enumerate subdomains for a single domain using all available engines.
     Results are saved to 'targets/<domain>_subdomains.csv'.
 
-    :param domain: Root domain to enumerate (e.g. 'bnpparibas.com')
+    :param domain: Root domain to enumerate (e.g. 'google.com')
     """
     enumerator = SubdomainsEnumerator()
 

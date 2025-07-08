@@ -7,6 +7,8 @@ from utils.threading import run_parallel
 from utils.display import export_grouped_domains_txt, export_root_vs_sub_txt
 from utils.enrich import enrich_record
 from utils.nvd_cache import load_cache
+from utils.enrich import enrich_record
+from utils.display import export_root_vs_sub_txt
 from occulusint.recon.domain_discovery import discover_domains_from_crtsh
 from occulusint.recon.subdomains import SubdomainsEnumerator
 from occulusint.recon.resolve import resolve_domains, is_reachable
@@ -21,6 +23,7 @@ from occulusint.core.filter import (
     is_subdomain,
     score_to_label
 )
+
 
 def show_banner():
     print(r"""
@@ -204,6 +207,7 @@ def run_filter(input_path, keywords):
         })
 
     write_csv(out_csv, data, fieldnames=["fqdn", "score","https_status", "type", "criticité"])
+
     export_root_vs_sub_txt(data, out_txt)
 
     print(f"[+] Filtered and scored domains saved to:\n  - {out_csv}\n  - {out_txt}")

@@ -14,7 +14,7 @@ def get_http_status(domain: str) -> int:
     Return the HTTP status code for a given domain using a HEAD request over HTTPS.
 
     :param domain: The domain name to test (e.g., 'example.com').
-    :return: HTTP status code (e.g., 200, 404), or 0 if unreachable.
+    :return: The HTTP status code (e.g., 200, 301, 404), or 0 if the request fails.
     """
     try:
         resp = requests.head(f"https://{domain}", timeout=5, allow_redirects=True)
@@ -194,9 +194,8 @@ def score_domain(domain: str, keywords: List[str]) -> int:
         socket.gethostbyname(d)
     except Exception:
         return 0
-
+      
     return min(100, score), status
-
 
 def score_domains_parallel(
     domains: List[str],

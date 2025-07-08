@@ -4,6 +4,7 @@ import re
 from typing import Dict, Tuple
 from .nvd_cache import get_cvss
 
+
 TLS_MAX = 25
 VULN_MAX = 35
 EXPOSURE_MAX = 25
@@ -25,10 +26,7 @@ def compute_security_score(row: Dict[str, str]) -> Tuple[int, Dict[str, int]]:
              where breakdown = {"tls": int, "vuln": int, "exposure": int, "hygiene": int}
     """
     breakdown: Dict[str, int] = {
-        "tls": 0,
-        "vuln": 0,
-        "exposure": 0,
-        "hygiene": 0,
+        "tls": 0, "vuln": 0, "exposure": 0, "hygiene": 0,
     }
 
     # TLS scoring
@@ -43,6 +41,7 @@ def compute_security_score(row: Dict[str, str]) -> Tuple[int, Dict[str, int]]:
         breakdown["tls"] = max(0, breakdown["tls"] - 10)
 
     # Vulnerability scoring
+
     cves = [c for c in row.get("vulns", "").split(";") if c]
     if not cves:
         breakdown["vuln"] = VULN_MAX
@@ -63,6 +62,7 @@ def compute_security_score(row: Dict[str, str]) -> Tuple[int, Dict[str, int]]:
             breakdown["vuln"] = 0
 
     # Exposure scoring
+
     ports = {int(p) for p in row.get("ports", "").split(";") if p}
     score = EXPOSURE_MAX
     if ports & RISKY_PORTS:
@@ -72,6 +72,7 @@ def compute_security_score(row: Dict[str, str]) -> Tuple[int, Dict[str, int]]:
     breakdown["exposure"] = max(0, score)
 
     # Hygiene scoring
+
     title = row.get("http.title", "")
     if title and not DEFAULT_TITLE_REGEX.search(title):
         breakdown["hygiene"] = HYGIENE_MAX

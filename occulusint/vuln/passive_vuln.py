@@ -24,7 +24,6 @@ CSV_FIELD_ORDER = [
     "os", "org", "asn"
 ]
 
-
 def passive_vuln_scan(
     input_csv: str | Path,
     output_csv: str | Path,
@@ -111,15 +110,19 @@ def passive_vuln_scan(
         writer = csv.DictWriter(
             f_score,
             fieldnames=[
-                "domain", "ip",
-                "tls_score", "vuln_score",
-                "exposure_score", "hygiene_score",
-                "total_score"
+                "domain",
+                "ip",
+                "tls_score",
+                "vuln_score",
+                "exposure_score",
+                "hygiene_score",
+                "total_score",
             ],
         )
         writer.writeheader()
         for row in unique_ips.values():
             total, br = compute_security_score(row)
+
             writer.writerow({
                 "domain": row["domain"],
                 "ip": row["ip"],
@@ -129,5 +132,4 @@ def passive_vuln_scan(
                 "hygiene_score": br["hygiene"],
                 "total_score": total,
             })
-
     print(f"[+] Score report saved to {score_path}")

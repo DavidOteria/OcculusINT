@@ -8,8 +8,6 @@ from typing import Any, Dict, Optional
 # Where to cache Shodan responses locally
 CACHE_DIR = pathlib.Path(".cache/shodan")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-# Respect Shodan rate limits
 RATE_LIMIT = 1.1  # seconds
 
 
@@ -94,3 +92,4 @@ def query_internetdb(ip: str) -> Dict[str, Any]:
         "vulns": raw.get("vulns", []),
         "data": [],
     }
+

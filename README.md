@@ -104,7 +104,7 @@ python main.py googledork example.com
 python main.py resolve targets/example_subdomains.txt
 python main.py enrich targets/example_subdomains_resolved.csv
 python main.py passive-vuln targets/example_subdomains_resolved.csv YOUR_SHODAN_KEY
-python main.py update-nvd 
+python main.py update-nvd # for updating CVSS db 
 python main.py filter targets/example_subdomains.txt example1 example2 example3
 ```
 

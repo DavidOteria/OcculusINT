@@ -4,7 +4,6 @@ import pathlib
 import requests
 from typing import Any, Dict, List, Optional
 from pathlib import Path
-
 from shodan import Shodan, APIError
 from utils.shodan_helpers import (
     extract_nested,
@@ -52,8 +51,10 @@ def passive_vuln_scan(
         output_csv.with_name(output_csv.stem.replace("_vuln", "_vuln_score") + ".csv")
 
     unique_ips: Dict[str, Dict[str, Any]] = {}
-    with input_csv.open(newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
+
+    with input_csv.open(newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
             ip_str = (row.get("ip") or row.get("IP") or "").strip()
             if not ip_str:
                 continue
@@ -71,11 +72,7 @@ def passive_vuln_scan(
 
     for ip in list(unique_ips):
         try:
-            data = (
-                query_internetdb(ip)
-                if use_internetdb
-                else query_shodan(api, ip)  
-            )
+            data = query_internetdb(ip) if use_internetdb else query_shodan(api, ip)
         except (APIError, requests.RequestException) as e:
             print(f"[!] {ip} skipped: {e}")
             unique_ips.pop(ip, None)
@@ -88,7 +85,7 @@ def passive_vuln_scan(
             "vulns": ";".join(data.get("vulns", [])),
             "os": data.get("os", ""),
             "org": data.get("org", ""),
-            "asn": data.get("asn", ""),
+            "asn": data.get("asn", "")
         }
 
         for banner in data.get("data", []):
@@ -102,13 +99,12 @@ def passive_vuln_scan(
 
         unique_ips[ip] = row
 
-
     with output_csv.open("w", newline="", encoding="utf-8") as f_out:
         writer = csv.DictWriter(f_out, fieldnames=CSV_FIELD_ORDER)
         writer.writeheader()
         writer.writerows(unique_ips.values())
-    print(f"[+] Vuln report saved to {output_csv}")
 
+    print(f"[+] Vuln report saved to {output_csv}")
 
     with score_path.open("w", newline="", encoding="utf-8") as f_score:
         writer = csv.DictWriter(
@@ -126,15 +122,14 @@ def passive_vuln_scan(
         writer.writeheader()
         for row in unique_ips.values():
             total, br = compute_security_score(row)
-            writer.writerow(
-                {
-                    "domain": row["domain"],
-                    "ip": row["ip"],
-                    "tls_score": br["tls"],
-                    "vuln_score": br["vuln"],
-                    "exposure_score": br["exposure"],
-                    "hygiene_score": br["hygiene"],
-                    "total_score": total,
-                }
-            )
+
+            writer.writerow({
+                "domain": row["domain"],
+                "ip": row["ip"],
+                "tls_score": br["tls"],
+                "vuln_score": br["vuln"],
+                "exposure_score": br["exposure"],
+                "hygiene_score": br["hygiene"],
+                "total_score": total,
+            })
     print(f"[+] Score report saved to {score_path}")

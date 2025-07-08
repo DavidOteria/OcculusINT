@@ -5,6 +5,7 @@ import requests
 from shodan import APIError, Shodan
 from typing import Any, Dict, Optional
 
+# Where to cache Shodan responses locally
 CACHE_DIR = pathlib.Path(".cache/shodan")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 RATE_LIMIT = 1.1  # seconds
@@ -14,8 +15,8 @@ def extract_nested(source: Dict[str, Any], dotted_path: str) -> Optional[Any]:
     """
     Walk a dotted *path* (e.g. 'ssl.cert.subject.CN') inside nested dicts.
 
-    :param src: Shodan banner (dict)
-    :param path: dotted path to extract
+    :param source: Shodan banner (dict)
+    :param dotted_path: dotted path to extract
     :return: value or None if any key is missing
     """
     parts = dotted_path.split(".")
@@ -91,3 +92,4 @@ def query_internetdb(ip: str) -> Dict[str, Any]:
         "vulns": raw.get("vulns", []),
         "data": [],
     }
+

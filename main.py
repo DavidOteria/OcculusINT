@@ -42,13 +42,13 @@ def usage():
 Usage: python main.py <step> <args>
 
 Steps:
-  discover      <keyword>
-  enum          <input_file.csv>
-  resolve       <input_file.csv>
-  passive-vuln  <input_file_resolved.csv> <SHODAN_API_KEY>
-  enrich        <resolved.csv>
-  filter        <input_file.csv> <keyword1> <keyword2> ...
-  update-nvd
+  -d or --discover      <keyword>
+  -e or --enum          <input_file.csv>
+  -r or --resolve       <input_file.csv>
+  -v or --passive-vuln  <input_file_resolved.csv> <SHODAN_API_KEY>
+  -n or --enrich        <resolved.csv>
+  -f or --filter        <input_file.csv> <keyword1> <keyword2> ...
+  -u or --update-nvd
 """)
 
 def run_discover(keywords):
@@ -226,17 +226,17 @@ def main():
 
     cmd = sys.argv[1]
 
-    if cmd == "discover" and len(sys.argv) >= 3:
+    if cmd == "-d" or cmd == "--discover" and len(sys.argv) >= 3:
         run_discover(sys.argv[2:])
-    elif cmd == "enum" and len(sys.argv) == 3:
+    elif cmd == "-e" or cmd == "--enum" and len(sys.argv) == 3:
         run_enum(sys.argv[2])
-    elif cmd == "resolve" and len(sys.argv) == 3:
+    elif cmd == "-r" or cmd == "--resolve" and len(sys.argv) == 3:
         run_resolve(sys.argv[2])
-    elif cmd == "passive-vuln" and len(sys.argv) == 4:
+    elif cmd == "-v" orcmd == "--passive-vuln" and len(sys.argv) == 4:
         run_passive_vuln(sys.argv[2], sys.argv[3])
-    elif cmd == "enrich" and len(sys.argv) == 3:
+    elif cmd == "-n" or cmd == "--enrich" and len(sys.argv) == 3:
         run_enrich(sys.argv[2])
-    elif cmd == "filter" and len(sys.argv) >= 4:
+    elif cmd == "-f" or cmd == "filter" and len(sys.argv) >= 4:
         run_filter(sys.argv[2], sys.argv[3:])
     elif cmd == "update-nvd" and len(sys.argv) == 2:
         run_update_nvd()

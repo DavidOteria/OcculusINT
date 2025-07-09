@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
+
 import sys
 import os
 import csv
 import pathlib
+import pandas
 from utils.csv import read_csv, write_csv
 from utils.threading import run_parallel
 from utils.display import export_grouped_domains_txt, export_root_vs_sub_txt
@@ -49,12 +52,17 @@ Steps:
   -v, --passive-vuln    <resolved.csv> <SHODAN_API_KEY> Query Shodan for passive vulnerability data
   -n, --enrich          <resolved.csv>                  Enrich resolved IPs with ASN and geo info
   -f, --filter          <input_file.csv> <keywords...>  Filter rows matching given keywords
-  -u, --update-nvd                                    Update local NVD CVE database
+  -u, --update-nvd                                      Update local NVD CVE database
+  -m, --merge           <resolved.csv>                  Merge resolved, filtered, vuln_score, and enriched data
 
 Examples:
   python main.py -d bnp
-  python main.py -v resolved.csv SHODAN_API_KEY
-  python main.py -f enum.csv apache nginx
+  python main.py -e targets/bnp_domains.csv
+  python main.py -r targets/bnp_domains_subdomains.csv
+  python main.py -v targets/bnp_domains_resolved.csv SHODAN_API_KEY
+  python main.py -n targets/bnp_domains_resolved.csv
+  python main.py -f targets/bnp_domains_resolved.csv apache nginx
+  python main.py -m targets/bnp_domains_resolved.csv
 
 OcculusINT v1.0 | by Oteria OSINT TEAM
 """)
@@ -225,6 +233,40 @@ def run_update_nvd():
     load_cache(force=True)
     print("[+] NVD CVSS cache successfully updated.")
 
+def run_merge(base_path):
+    """
+    Merge resolved, filtered, vuln_score, and enriched files for a given base.
+
+    :param base_path: path to the *_resolved.csv file
+    :return: None – writes *_final.csv
+    """
+    import pandas as pd
+
+    base = base_path.replace("_resolved.csv", "")
+    files = {
+        "resolved": f"{base}_resolved.csv",
+        "filtered": f"{base}_filtered.csv",
+        "vuln": f"{base}_vuln_score.csv",
+        "enriched": f"{base}_enriched.csv"
+    }
+
+    dfs = {}
+    for name, path in files.items():
+        if os.path.exists(path):
+            dfs[name] = pd.read_csv(path)
+        else:
+            print(f"[!] Warning: {name} file not found: {path}")
+
+    # Fusion progressive
+    df = dfs.get("resolved", pd.DataFrame())
+    for key in ["filtered", "vuln", "enriched"]:
+        if key in dfs:
+            df = pd.merge(df, dfs[key], on=["domain", "ip"], how="left")
+
+    out_path = f"{base}_final.csv"
+    df.to_csv(out_path, index=False)
+    print(f"[✔] Final consolidated file saved as: {out_path}")
+
 def main():
     show_banner()
 
@@ -248,6 +290,8 @@ def main():
         run_filter(sys.argv[2], sys.argv[3:])
     elif cmd == "update-nvd" and len(sys.argv) == 2:
         run_update_nvd()
+    elif cmd == "-m" or cmd == "--merge" and len(sys.argv) == 3:
+        run_merge(sys.argv[2])
     else:
         usage()
 

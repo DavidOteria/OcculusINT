@@ -81,7 +81,7 @@ pip install -r requirements.txt
 Launch the tool with:
 
 ```bash
-python main.py <command> <args>
+python main.py -<command> <args>
 ```
 
 Available commands:
@@ -98,14 +98,15 @@ Available commands:
 ## Examples 
 
 ```bash 
-python main.py discover exmple
-python main.py enum targets/example_domains.txt
-python main.py googledork example.com
-python main.py resolve targets/example_subdomains.txt
-python main.py enrich targets/example_subdomains_resolved.csv
-python main.py passive-vuln targets/example_subdomains_resolved.csv YOUR_SHODAN_KEY
-python main.py update-nvd # for updating CVSS db 
-python main.py filter targets/example_subdomains.txt example1 example2 example3
+python main.py --discover exmple
+python main.py -d exemple
+python main.py --enum targets/example_domains.txt
+python main.py --googledork example.com
+python main.py --resolve targets/example_subdomains.txt
+python main.py --enrich targets/example_subdomains_resolved.csv
+python main.py --passive-vuln targets/example_subdomains_resolved.csv YOUR_SHODAN_KEY
+python main.py --update-nvd # for updating CVSS db 
+python main.py --filter targets/example_subdomains.txt example1 example2 example3
 ```
 
 ---

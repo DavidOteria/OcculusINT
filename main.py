@@ -56,13 +56,13 @@ Steps:
   -m, --merge           <resolved.csv>                  Merge resolved, filtered, vuln_score, and enriched data
 
 Examples:
-  python main.py -d bnp
-  python main.py -e targets/bnp_domains.csv
-  python main.py -r targets/bnp_domains_subdomains.csv
-  python main.py -v targets/bnp_domains_resolved.csv SHODAN_API_KEY
-  python main.py -n targets/bnp_domains_resolved.csv
-  python main.py -f targets/bnp_domains_resolved.csv apache nginx
-  python main.py -m targets/bnp_domains_resolved.csv
+  python main.py -d X
+  python main.py -e targets/X_domains.csv
+  python main.py -r targets/X_domains_subdomains.csv
+  python main.py -v targets/X_domains_resolved.csv SHODAN_API_KEY
+  python main.py -n targets/X_domains_resolved.csv
+  python main.py -f targets/X_domains_resolved.csv apache nginx
+  python main.py -m targets/X_domains_resolved.csv
 
 OcculusINT v1.0 | by Oteria OSINT TEAM
 """)

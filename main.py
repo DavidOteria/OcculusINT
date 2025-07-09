@@ -38,17 +38,25 @@ def show_banner():
     """)
 
 def usage():
-    print("""
-Usage: python main.py <step> <args>
+    print("""OcculusINT - Open Source Intelligence Scanner
+          
+Usage: python main.py <step> [options]
 
 Steps:
-  -d or --discover      <keyword>
-  -e or --enum          <input_file.csv>
-  -r or --resolve       <input_file.csv>
-  -v or --passive-vuln  <input_file_resolved.csv> <SHODAN_API_KEY>
-  -n or --enrich        <resolved.csv>
-  -f or --filter        <input_file.csv> <keyword1> <keyword2> ...
-  -u or --update-nvd
+  -d, --discover        <keyword>                       Discover subdomains from keyword
+  -e, --enum            <input_file.csv>                Enumerate data from collected domains
+  -r, --resolve         <input_file.csv>                Resolve domains to IPs
+  -v, --passive-vuln    <resolved.csv> <SHODAN_API_KEY> Query Shodan for passive vulnerability data
+  -n, --enrich          <resolved.csv>                  Enrich resolved IPs with ASN and geo info
+  -f, --filter          <input_file.csv> <keywords...>  Filter rows matching given keywords
+  -u, --update-nvd                                    Update local NVD CVE database
+
+Examples:
+  python main.py -d bnp
+  python main.py -v resolved.csv SHODAN_API_KEY
+  python main.py -f enum.csv apache nginx
+
+OcculusINT v1.0 | by Oteria OSINT TEAM
 """)
 
 def run_discover(keywords):

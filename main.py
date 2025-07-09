@@ -232,7 +232,7 @@ def main():
         run_enum(sys.argv[2])
     elif cmd == "-r" or cmd == "--resolve" and len(sys.argv) == 3:
         run_resolve(sys.argv[2])
-    elif cmd == "-v" orcmd == "--passive-vuln" and len(sys.argv) == 4:
+    elif cmd == "-v" or cmd == "--passive-vuln" and len(sys.argv) == 4:
         run_passive_vuln(sys.argv[2], sys.argv[3])
     elif cmd == "-n" or cmd == "--enrich" and len(sys.argv) == 3:
         run_enrich(sys.argv[2])
